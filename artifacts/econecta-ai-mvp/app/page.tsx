@@ -153,12 +153,15 @@ export default function Home() {
 
     setSearching(true);
 
+    const controller = new AbortController();
+    const timeoutId = window.setTimeout(() => controller.abort(), 20_000);
+
     try {
       const res = await fetch("/valen", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ query: t }),
-        signal: AbortSignal.timeout(20_000),
+        signal: controller.signal,
       });
 
       const json: ValenApiResponse = await res.json();
@@ -172,12 +175,14 @@ export default function Home() {
         setAiSource(json.source);
       }
     } catch (err) {
-      const msg = err instanceof Error && err.name === "TimeoutError"
-        ? "A busca demorou demais. Tente novamente."
-        : "Erro de conexão. Verifique sua internet e tente novamente.";
+      const msg =
+        err instanceof Error && err.name === "AbortError"
+          ? "A busca demorou demais. Tente novamente."
+          : "Erro de conexão. Verifique sua internet e tente novamente.";
       setSearchError(msg);
       setResults([]);
     } finally {
+      window.clearTimeout(timeoutId);
       setSearching(false);
     }
 

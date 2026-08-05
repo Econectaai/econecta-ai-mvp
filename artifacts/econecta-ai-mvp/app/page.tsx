@@ -140,8 +140,27 @@ export default function Home() {
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
-    setLoading(true);
     setError(null);
+
+    // --- Client-side validation ---
+    if (
+      form.discount_percentage !== null &&
+      form.discount_percentage !== undefined &&
+      (form.discount_percentage < 0 || form.discount_percentage > 100)
+    ) {
+      setError("O desconto deve ser um valor entre 0 e 100.");
+      return;
+    }
+
+    if (form.promotion_expiration) {
+      const d = new Date(form.promotion_expiration);
+      if (isNaN(d.getTime())) {
+        setError("Data de validade da promoção inválida.");
+        return;
+      }
+    }
+
+    setLoading(true);
 
     // Strip empty optional strings so Supabase stores NULL instead of ""
     const payload: Record<string, unknown> = {};
@@ -157,7 +176,11 @@ export default function Home() {
 
     setLoading(false);
     if (sbError) {
-      setError(sbError.message);
+      setError(
+        sbError.message.includes("violates")
+          ? "Erro de validação: verifique os campos obrigatórios."
+          : sbError.message
+      );
     } else {
       setSuccess(true);
     }

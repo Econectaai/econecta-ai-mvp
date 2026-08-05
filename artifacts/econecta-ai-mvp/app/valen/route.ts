@@ -97,7 +97,13 @@ function sortResults(rows: SearchResult[]): SearchResult[] {
 async function searchByIntent(intent: SearchIntent): Promise<{ data: SearchResult[]; error: string | null }> {
   // Collect all unique meaningful terms
   const termSet = new Set<string>();
-  if (intent.category) termSet.add(intent.category);
+  if (intent.category) {
+    termSet.add(intent.category);
+    // Also add singular stem (strip trailing 's') so "Padarias" → "Padaria"
+    // matches business_name fields that store the singular form.
+    const singular = intent.category.replace(/s$/i, "");
+    if (singular !== intent.category) termSet.add(singular);
+  }
   if (intent.product_or_service) termSet.add(intent.product_or_service);
   if (intent.city) termSet.add(intent.city);
   if (intent.neighborhood) termSet.add(intent.neighborhood);
@@ -163,7 +169,10 @@ Receba uma consulta em português e retorne APENAS um objeto JSON válido com es
   "keywords": array de strings (máximo 4, somente termos relevantes para busca)
 }
 Exemplos de categorias: Padarias, Restaurantes, Farmácias, Supermercados, Eletrônicos, Moda.
-Não invente informações. Não inclua palavras de preenchimento nos keywords.
+Regras para keywords:
+- Sempre inclua o tipo de negócio principal em keywords no singular (ex: se category é "Padarias", adicione "padaria" em keywords; se é "Restaurantes", adicione "restaurante").
+- Inclua também produto/serviço específico mencionado (ex: "café", "croissant", "pizza").
+- Não inclua palavras de preenchimento, adjetivos genéricos (barato, bom, perto), advérbios de tempo (amanhã, cedo, hoje).
 Retorne somente o JSON, sem explicações.`;
 
 type IntentResult =

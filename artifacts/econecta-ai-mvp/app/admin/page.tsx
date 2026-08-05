@@ -61,7 +61,7 @@ export default function AdminPage() {
   const [sortDir, setSortDir] = useState<SortDir>("desc");
 
   async function handleLogout() {
-    await fetch("/api/auth/logout", { method: "POST" });
+    await fetch("/admin/auth/logout", { method: "POST" });
     router.push("/admin/login");
   }
 

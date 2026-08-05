@@ -16,7 +16,7 @@ export default function AdminLoginPage() {
     setLoading(true);
     setError(null);
 
-    const res = await fetch("/api/auth/login", {
+    const res = await fetch("/admin/auth/login", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ email, password }),
@@ -25,11 +25,22 @@ export default function AdminLoginPage() {
     if (res.ok) {
       router.push("/admin");
       router.refresh();
-    } else {
-      const data = await res.json();
-      setError(data.error ?? "Erro ao entrar. Tente novamente.");
-      setLoading(false);
+      return;
     }
+
+    // Safely parse error — guard against non-JSON responses
+    let message = "Erro ao entrar. Tente novamente.";
+    const contentType = res.headers.get("content-type") ?? "";
+    if (contentType.includes("application/json")) {
+      try {
+        const data = await res.json();
+        if (data?.error) message = data.error;
+      } catch {
+        // fall through to default message
+      }
+    }
+    setError(message);
+    setLoading(false);
   }
 
   return (

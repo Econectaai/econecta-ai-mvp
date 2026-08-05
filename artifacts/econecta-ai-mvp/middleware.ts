@@ -5,8 +5,12 @@ import { verifyToken, COOKIE_NAME } from "./lib/auth";
 export async function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
 
-  // Protect all /admin paths except the login page itself
-  if (pathname.startsWith("/admin") && !pathname.startsWith("/admin/login")) {
+  // Protect all /admin paths except the login page and auth API routes
+  if (
+    pathname.startsWith("/admin") &&
+    !pathname.startsWith("/admin/login") &&
+    !pathname.startsWith("/admin/auth/")
+  ) {
     const token = request.cookies.get(COOKIE_NAME)?.value;
     const secret = process.env.SESSION_SECRET;
 

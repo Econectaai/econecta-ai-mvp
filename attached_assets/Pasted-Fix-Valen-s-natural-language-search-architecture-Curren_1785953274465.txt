@@ -1,0 +1,51 @@
+Fix Valen's natural-language search architecture.
+
+Current problem:
+Simple searches such as "padaria" work, but a natural request like
+"Quero uma padaria barata para tomar café amanhã cedo"
+is searched as one literal string and returns zero results.
+
+Required flow:
+
+1. Receive the user's complete natural-language message.
+2. Use OpenAI on the server to extract structured search intent BEFORE querying Supabase.
+3. Return structured fields such as:
+   - category
+   - product_or_service
+   - city
+   - neighborhood
+   - wants_promotion
+   - keywords
+4. Search public.businesses using those extracted terms individually.
+5. Do not require every extracted term to match.
+6. Category or product matches should be enough to return useful candidates.
+7. Then send only the matching public business records to OpenAI to create the final Portuguese response.
+
+Examples:
+- "Quero uma padaria barata para tomar café amanhã cedo"
+  should extract category "Padarias" and keywords ["café", "padaria"].
+- "Onde encontro um bom croissant?"
+  should extract keywords ["croissant", "padaria"].
+- "Restaurante com desconto em Santo André"
+  should extract category "Restaurantes", city "Santo André", and wants_promotion true.
+
+Important:
+- Use the official OpenAI SDK and Responses API.
+- Use process.env.OPENAI_MODEL.
+- Keep all OpenAI calls server-side.
+- Never expose OPENAI_API_KEY.
+- Never send owner_name, email, phone, admin fields, or secrets to OpenAI.
+- Never invent businesses or promotions.
+- If OpenAI intent extraction fails, use a deterministic fallback that removes filler words such as:
+  quero, uma, um, para, tomar, onde, encontro, bom, boa, amanhã, cedo, perto, de, em.
+- Keep Valen v1 keyword search as fallback.
+- Do not change the design, admin panel, registration form, or database.
+- Add temporary safe server logs showing only:
+  intent extraction succeeded/failed,
+  extracted category,
+  number of Supabase candidates,
+  OpenAI response succeeded/failed.
+- Do not log API keys, full credentials, or private customer data.
+- Test the exact sentence:
+  "Quero uma padaria barata para tomar café amanhã cedo"
+- Confirm that it returns "Padaria Teste Econecta".

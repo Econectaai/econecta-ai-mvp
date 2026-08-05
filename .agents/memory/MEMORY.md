@@ -1,0 +1,4 @@
+- [Valen route path](valen-route-path.md) — /valen not /api/valen; api-server artifact intercepts all /api/* at proxy layer
+- [Valen v2 architecture](valen-v2-architecture.md) — two-step OpenAI flow: intent extraction → Supabase OR search → response generation
+- [OpenAI fallback pattern](openai-fallback.md) — any intent extraction failure sets available=false; skip response generation entirely to avoid double timeout
+- [Auth routes](auth-routes.md) — admin auth at /admin/auth/ not /api/auth/ due to proxy interception; HMAC-SHA256 signed cookies

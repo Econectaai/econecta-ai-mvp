@@ -16,6 +16,9 @@ import {
   CheckCircle2,
   Loader2,
   Building2,
+  Tag,
+  Globe,
+  Clock,
 } from "lucide-react";
 import { supabase, type Business } from "../lib/supabase";
 
@@ -69,7 +72,10 @@ const BRAZIL_STATES = [
   "RS","RO","RR","SC","SP","SE","TO",
 ];
 
-const EMPTY_FORM: Omit<Business, "id" | "created_at"> = {
+type FormData = Omit<Business, "id" | "created_at">;
+
+const EMPTY_FORM: FormData = {
+  // Core
   business_name: "",
   owner_name: "",
   email: "",
@@ -77,6 +83,22 @@ const EMPTY_FORM: Omit<Business, "id" | "created_at"> = {
   city: "",
   state: "",
   category: "",
+  // Location
+  address: "",
+  neighborhood: "",
+  postal_code: "",
+  // Digital contact
+  whatsapp: "",
+  instagram: "",
+  website: "",
+  // Business info
+  description: "",
+  opening_hours: "",
+  // Promotion
+  promotion_title: "",
+  promotion_description: "",
+  discount_percentage: null,
+  promotion_expiration: "",
 };
 
 export default function Home() {
@@ -85,7 +107,7 @@ export default function Home() {
 
   // Modal state
   const [modalOpen, setModalOpen] = useState(false);
-  const [form, setForm] = useState({ ...EMPTY_FORM });
+  const [form, setForm] = useState<FormData>({ ...EMPTY_FORM });
   const [loading, setLoading] = useState(false);
   const [success, setSuccess] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -105,9 +127,15 @@ export default function Home() {
   }
 
   function handleChange(
-    e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>
+    e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>
   ) {
-    setForm((prev) => ({ ...prev, [e.target.name]: e.target.value }));
+    const { name, value } = e.target;
+    setForm((prev) => ({
+      ...prev,
+      [name]: name === "discount_percentage"
+        ? value === "" ? null : Number(value)
+        : value,
+    }));
   }
 
   async function handleSubmit(e: React.FormEvent) {
@@ -115,12 +143,19 @@ export default function Home() {
     setLoading(true);
     setError(null);
 
-    const { error: sbError } = await supabase
-      .from("businesses")
-      .insert([form]);
+    // Strip empty optional strings so Supabase stores NULL instead of ""
+    const payload: Record<string, unknown> = {};
+    for (const [k, v] of Object.entries(form)) {
+      if (v === "" || v === null) {
+        payload[k] = null;
+      } else {
+        payload[k] = v;
+      }
+    }
+
+    const { error: sbError } = await supabase.from("businesses").insert([payload]);
 
     setLoading(false);
-
     if (sbError) {
       setError(sbError.message);
     } else {
@@ -186,19 +221,14 @@ export default function Home() {
           style={{ animationDelay: "300ms" }}
         >
           <div className="relative group">
-            {/* Glow ring on focus */}
             <div className="absolute -inset-0.5 bg-gradient-to-r from-blue-500 via-violet-500 to-fuchsia-500 rounded-2xl opacity-0 group-focus-within:opacity-60 blur transition-opacity duration-500" />
-
             <div className="relative flex items-center bg-white/[0.06] backdrop-blur-md border border-white/10 rounded-2xl overflow-hidden">
-              {/* Location indicator */}
               <div className="flex items-center gap-1.5 pl-4 pr-3 border-r border-white/10 shrink-0">
                 <MapPin className="w-4 h-4 text-blue-400" />
                 <span className="text-sm text-slate-400 hidden sm:block whitespace-nowrap">
                   Localização
                 </span>
               </div>
-
-              {/* Input */}
               <input
                 type="text"
                 value={query}
@@ -206,8 +236,6 @@ export default function Home() {
                 placeholder="Buscar promoções, produtos, lojas..."
                 className="flex-1 bg-transparent px-4 py-4 text-white placeholder-slate-500 outline-none text-sm sm:text-base"
               />
-
-              {/* Search button */}
               <button className="m-2 shrink-0 flex items-center gap-2 bg-gradient-to-r from-blue-500 to-violet-600 hover:from-blue-400 hover:to-violet-500 text-white px-5 py-3 rounded-xl font-semibold text-sm transition-all duration-200 hover:scale-[1.03] active:scale-95 shadow-lg shadow-blue-500/25">
                 <Search className="w-4 h-4" />
                 <span className="hidden sm:block">Buscar</span>
@@ -227,9 +255,7 @@ export default function Home() {
             return (
               <button
                 key={cat.label}
-                onClick={() =>
-                  setActiveCategory(isActive ? null : cat.label)
-                }
+                onClick={() => setActiveCategory(isActive ? null : cat.label)}
                 className={`
                   group flex items-center gap-2.5 px-5 py-3 rounded-xl border font-medium text-sm
                   transition-all duration-200 hover:scale-[1.04] active:scale-95
@@ -297,9 +323,9 @@ export default function Home() {
           style={{ background: "rgba(0,0,0,0.7)", backdropFilter: "blur(6px)" }}
           onClick={(e) => e.target === e.currentTarget && closeModal()}
         >
-          <div className="w-full max-w-lg glass rounded-2xl border border-white/10 shadow-2xl overflow-hidden">
+          <div className="w-full max-w-2xl glass rounded-2xl border border-white/10 shadow-2xl overflow-hidden flex flex-col max-h-[90vh]">
             {/* Modal header */}
-            <div className="flex items-center justify-between px-6 py-5 border-b border-white/10">
+            <div className="flex items-center justify-between px-6 py-5 border-b border-white/10 shrink-0">
               <div className="flex items-center gap-2.5">
                 <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-blue-500 to-violet-600 flex items-center justify-center">
                   <Building2 className="w-4 h-4 text-white" />
@@ -344,127 +370,267 @@ export default function Home() {
                 </button>
               </div>
             ) : (
-              /* Form */
-              <form onSubmit={handleSubmit} className="px-6 py-5 space-y-4">
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                  <Field
-                    label="Nome do negócio"
-                    name="business_name"
-                    value={form.business_name}
-                    onChange={handleChange}
-                    placeholder="Ex: Padaria Central"
-                    required
-                  />
-                  <Field
-                    label="Nome do responsável"
-                    name="owner_name"
-                    value={form.owner_name}
-                    onChange={handleChange}
-                    placeholder="Seu nome completo"
-                    required
-                  />
-                  <Field
-                    label="E-mail"
-                    name="email"
-                    type="email"
-                    value={form.email}
-                    onChange={handleChange}
-                    placeholder="contato@negocio.com"
-                    required
-                  />
-                  <Field
-                    label="Telefone"
-                    name="phone"
-                    type="tel"
-                    value={form.phone}
-                    onChange={handleChange}
-                    placeholder="(11) 99999-9999"
-                    required
-                  />
-                  <Field
-                    label="Cidade"
-                    name="city"
-                    value={form.city}
-                    onChange={handleChange}
-                    placeholder="Sua cidade"
-                    required
-                  />
+              /* Scrollable form body */
+              <form onSubmit={handleSubmit} className="overflow-y-auto flex-1">
+                <div className="px-6 py-5 space-y-6">
 
-                  {/* State select */}
-                  <div className="flex flex-col gap-1.5">
-                    <label className="text-xs font-medium text-slate-400 uppercase tracking-wide">
-                      Estado <span className="text-rose-400">*</span>
-                    </label>
-                    <select
-                      name="state"
-                      value={form.state}
+                  {/* ── Section: Informações do negócio ── */}
+                  <Section icon={Building2} title="Informações do negócio" />
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <Field
+                      label="Nome do negócio"
+                      name="business_name"
+                      value={form.business_name}
                       onChange={handleChange}
+                      placeholder="Ex: Padaria Central"
                       required
-                      className="bg-white/[0.06] border border-white/10 rounded-xl px-3 py-2.5 text-sm text-white outline-none focus:border-blue-500/60 transition-colors appearance-none"
-                    >
-                      <option value="" disabled className="bg-[#0a0f1e]">
-                        Selecione
-                      </option>
-                      {BRAZIL_STATES.map((s) => (
-                        <option key={s} value={s} className="bg-[#0a0f1e]">
-                          {s}
-                        </option>
-                      ))}
-                    </select>
+                    />
+                    <Field
+                      label="Nome do responsável"
+                      name="owner_name"
+                      value={form.owner_name}
+                      onChange={handleChange}
+                      placeholder="Seu nome completo"
+                      required
+                    />
+                    <Field
+                      label="E-mail"
+                      name="email"
+                      type="email"
+                      value={form.email}
+                      onChange={handleChange}
+                      placeholder="contato@negocio.com"
+                      required
+                    />
+                    <Field
+                      label="Telefone"
+                      name="phone"
+                      type="tel"
+                      value={form.phone}
+                      onChange={handleChange}
+                      placeholder="(11) 99999-9999"
+                      required
+                    />
+                    <Field
+                      label="Cidade"
+                      name="city"
+                      value={form.city}
+                      onChange={handleChange}
+                      placeholder="Sua cidade"
+                      required
+                    />
+                    {/* State select */}
+                    <div className="flex flex-col gap-1.5">
+                      <label className="text-xs font-medium text-slate-400 uppercase tracking-wide">
+                        Estado <span className="text-rose-400">*</span>
+                      </label>
+                      <select
+                        name="state"
+                        value={form.state}
+                        onChange={handleChange}
+                        required
+                        className="bg-white/[0.06] border border-white/10 rounded-xl px-3 py-2.5 text-sm text-white outline-none focus:border-blue-500/60 transition-colors appearance-none"
+                      >
+                        <option value="" disabled className="bg-[#0a0f1e]">Selecione</option>
+                        {BRAZIL_STATES.map((s) => (
+                          <option key={s} value={s} className="bg-[#0a0f1e]">{s}</option>
+                        ))}
+                      </select>
+                    </div>
+                    {/* Category select — full width */}
+                    <div className="sm:col-span-2 flex flex-col gap-1.5">
+                      <label className="text-xs font-medium text-slate-400 uppercase tracking-wide">
+                        Categoria <span className="text-rose-400">*</span>
+                      </label>
+                      <select
+                        name="category"
+                        value={form.category}
+                        onChange={handleChange}
+                        required
+                        className="bg-white/[0.06] border border-white/10 rounded-xl px-3 py-2.5 text-sm text-white outline-none focus:border-blue-500/60 transition-colors appearance-none"
+                      >
+                        <option value="" disabled className="bg-[#0a0f1e]">Selecione uma categoria</option>
+                        {categories.map((c) => (
+                          <option key={c.label} value={c.label} className="bg-[#0a0f1e]">{c.label}</option>
+                        ))}
+                      </select>
+                    </div>
                   </div>
-                </div>
 
-                {/* Category select */}
-                <div className="flex flex-col gap-1.5">
-                  <label className="text-xs font-medium text-slate-400 uppercase tracking-wide">
-                    Categoria <span className="text-rose-400">*</span>
-                  </label>
-                  <select
-                    name="category"
-                    value={form.category}
-                    onChange={handleChange}
-                    required
-                    className="bg-white/[0.06] border border-white/10 rounded-xl px-3 py-2.5 text-sm text-white outline-none focus:border-blue-500/60 transition-colors appearance-none"
-                  >
-                    <option value="" disabled className="bg-[#0a0f1e]">
-                      Selecione uma categoria
-                    </option>
-                    {categories.map((c) => (
-                      <option key={c.label} value={c.label} className="bg-[#0a0f1e]">
-                        {c.label}
-                      </option>
-                    ))}
-                  </select>
-                </div>
+                  {/* ── Section: Localização ── */}
+                  <Section icon={MapPin} title="Localização" />
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <div className="sm:col-span-2">
+                      <Field
+                        label="Endereço"
+                        name="address"
+                        value={form.address ?? ""}
+                        onChange={handleChange}
+                        placeholder="Rua, número"
+                      />
+                    </div>
+                    <Field
+                      label="Bairro"
+                      name="neighborhood"
+                      value={form.neighborhood ?? ""}
+                      onChange={handleChange}
+                      placeholder="Nome do bairro"
+                    />
+                    <Field
+                      label="CEP"
+                      name="postal_code"
+                      value={form.postal_code ?? ""}
+                      onChange={handleChange}
+                      placeholder="00000-000"
+                    />
+                  </div>
 
-                {/* Error */}
-                {error && (
-                  <p className="text-rose-400 text-xs bg-rose-500/10 border border-rose-500/20 rounded-xl px-3 py-2">
-                    Erro ao salvar: {error}
-                  </p>
-                )}
+                  {/* ── Section: Contato digital ── */}
+                  <Section icon={Globe} title="Contato digital" optional />
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <Field
+                      label="WhatsApp"
+                      name="whatsapp"
+                      type="tel"
+                      value={form.whatsapp ?? ""}
+                      onChange={handleChange}
+                      placeholder="(11) 99999-9999"
+                    />
+                    <Field
+                      label="Instagram"
+                      name="instagram"
+                      value={form.instagram ?? ""}
+                      onChange={handleChange}
+                      placeholder="@seunegocio"
+                    />
+                    <div className="sm:col-span-2">
+                      <Field
+                        label="Website"
+                        name="website"
+                        type="url"
+                        value={form.website ?? ""}
+                        onChange={handleChange}
+                        placeholder="https://seunegocio.com.br"
+                      />
+                    </div>
+                  </div>
 
-                {/* Submit */}
-                <button
-                  type="submit"
-                  disabled={loading}
-                  className="w-full flex items-center justify-center gap-2 py-3 rounded-xl bg-gradient-to-r from-blue-500 to-violet-600 hover:from-blue-400 hover:to-violet-500 disabled:opacity-60 disabled:cursor-not-allowed text-white font-semibold text-sm transition-all duration-200 hover:scale-[1.01] active:scale-95 shadow-lg shadow-blue-500/20"
-                >
-                  {loading ? (
-                    <>
-                      <Loader2 className="w-4 h-4 animate-spin" />
-                      Salvando...
-                    </>
-                  ) : (
-                    "Cadastrar negócio"
+                  {/* ── Section: Sobre o negócio ── */}
+                  <Section icon={Clock} title="Sobre o negócio" optional />
+                  <div className="space-y-4">
+                    <TextareaField
+                      label="Descrição"
+                      name="description"
+                      value={form.description ?? ""}
+                      onChange={handleChange}
+                      placeholder="Conte um pouco sobre seu negócio, produtos e diferenciais..."
+                      rows={3}
+                    />
+                    <Field
+                      label="Horário de funcionamento"
+                      name="opening_hours"
+                      value={form.opening_hours ?? ""}
+                      onChange={handleChange}
+                      placeholder="Seg–Sex: 8h–18h | Sáb: 8h–13h"
+                    />
+                  </div>
+
+                  {/* ── Section: Promoção atual ── */}
+                  <Section icon={Tag} title="Promoção atual" optional />
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <div className="sm:col-span-2">
+                      <Field
+                        label="Título da promoção"
+                        name="promotion_title"
+                        value={form.promotion_title ?? ""}
+                        onChange={handleChange}
+                        placeholder="Ex: Frete grátis na primeira compra"
+                      />
+                    </div>
+                    <div className="sm:col-span-2">
+                      <TextareaField
+                        label="Descrição da promoção"
+                        name="promotion_description"
+                        value={form.promotion_description ?? ""}
+                        onChange={handleChange}
+                        placeholder="Detalhes, condições e termos da promoção..."
+                        rows={2}
+                      />
+                    </div>
+                    <Field
+                      label="Desconto (%)"
+                      name="discount_percentage"
+                      type="number"
+                      value={form.discount_percentage == null ? "" : String(form.discount_percentage)}
+                      onChange={handleChange}
+                      placeholder="Ex: 20"
+                    />
+                    <Field
+                      label="Válido até"
+                      name="promotion_expiration"
+                      type="date"
+                      value={form.promotion_expiration ?? ""}
+                      onChange={handleChange}
+                    />
+                  </div>
+
+                  {/* Error */}
+                  {error && (
+                    <p className="text-rose-400 text-xs bg-rose-500/10 border border-rose-500/20 rounded-xl px-3 py-2">
+                      Erro ao salvar: {error}
+                    </p>
                   )}
-                </button>
+
+                  {/* Submit */}
+                  <button
+                    type="submit"
+                    disabled={loading}
+                    className="w-full flex items-center justify-center gap-2 py-3 rounded-xl bg-gradient-to-r from-blue-500 to-violet-600 hover:from-blue-400 hover:to-violet-500 disabled:opacity-60 disabled:cursor-not-allowed text-white font-semibold text-sm transition-all duration-200 hover:scale-[1.01] active:scale-95 shadow-lg shadow-blue-500/20"
+                  >
+                    {loading ? (
+                      <>
+                        <Loader2 className="w-4 h-4 animate-spin" />
+                        Salvando...
+                      </>
+                    ) : (
+                      "Cadastrar negócio"
+                    )}
+                  </button>
+                </div>
               </form>
             )}
           </div>
         </div>
       )}
     </main>
+  );
+}
+
+/* ── Section header ── */
+function Section({
+  icon: Icon,
+  title,
+  optional,
+}: {
+  icon: React.ElementType;
+  title: string;
+  optional?: boolean;
+}) {
+  return (
+    <div className="flex items-center gap-2 pt-2">
+      <div className="w-6 h-6 rounded-md bg-blue-500/15 flex items-center justify-center shrink-0">
+        <Icon className="w-3.5 h-3.5 text-blue-400" />
+      </div>
+      <span className="text-xs font-semibold text-slate-300 uppercase tracking-widest">
+        {title}
+      </span>
+      {optional && (
+        <span className="text-xs text-slate-600 normal-case tracking-normal font-normal ml-1">
+          (opcional)
+        </span>
+      )}
+      <div className="flex-1 h-px bg-white/[0.06] ml-2" />
+    </div>
   );
 }
 
@@ -498,7 +664,42 @@ function Field({
         onChange={onChange}
         placeholder={placeholder}
         required={required}
+        min={type === "number" ? 0 : undefined}
+        max={type === "number" ? 100 : undefined}
         className="bg-white/[0.06] border border-white/10 rounded-xl px-3 py-2.5 text-sm text-white placeholder-slate-600 outline-none focus:border-blue-500/60 transition-colors"
+      />
+    </div>
+  );
+}
+
+/* ── Textarea field ── */
+function TextareaField({
+  label,
+  name,
+  value,
+  onChange,
+  placeholder,
+  rows = 3,
+}: {
+  label: string;
+  name: string;
+  value: string;
+  onChange: (e: React.ChangeEvent<HTMLTextAreaElement>) => void;
+  placeholder?: string;
+  rows?: number;
+}) {
+  return (
+    <div className="flex flex-col gap-1.5">
+      <label className="text-xs font-medium text-slate-400 uppercase tracking-wide">
+        {label}
+      </label>
+      <textarea
+        name={name}
+        value={value}
+        onChange={onChange}
+        placeholder={placeholder}
+        rows={rows}
+        className="bg-white/[0.06] border border-white/10 rounded-xl px-3 py-2.5 text-sm text-white placeholder-slate-600 outline-none focus:border-blue-500/60 transition-colors resize-none"
       />
     </div>
   );

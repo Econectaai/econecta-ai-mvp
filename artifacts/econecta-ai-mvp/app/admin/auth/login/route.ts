@@ -3,11 +3,24 @@ import { createToken, COOKIE_NAME, COOKIE_MAX_AGE } from "../../../../lib/auth";
 
 export async function POST(request: Request) {
   try {
-    const { email, password } = await request.json();
+    const body = await request.json();
+    const email = (body.email ?? "").trim().toLowerCase();
+    const password = (body.password ?? "").trim();
 
-    const adminEmail = process.env.ADMIN_EMAIL;
-    const adminPassword = process.env.ADMIN_PASSWORD;
+    const adminEmail = (process.env.ADMIN_EMAIL ?? "").trim().toLowerCase();
+    const adminPassword = (process.env.ADMIN_PASSWORD ?? "").trim();
     const sessionSecret = process.env.SESSION_SECRET;
+
+    // Diagnostic — lengths only, never values
+    console.log("[auth/login] secret check:", {
+      ADMIN_EMAIL_exists: !!process.env.ADMIN_EMAIL,
+      ADMIN_EMAIL_len: adminEmail.length,
+      ADMIN_PASSWORD_exists: !!process.env.ADMIN_PASSWORD,
+      ADMIN_PASSWORD_len: adminPassword.length,
+      SESSION_SECRET_exists: !!sessionSecret,
+      submitted_email_len: email.length,
+      submitted_password_len: password.length,
+    });
 
     if (!adminEmail || !adminPassword || !sessionSecret) {
       return NextResponse.json(

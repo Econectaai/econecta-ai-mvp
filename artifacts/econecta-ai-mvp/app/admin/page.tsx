@@ -16,7 +16,9 @@ import {
   Smartphone,
   Shirt,
   Sparkles,
+  LogOut,
 } from "lucide-react";
+import { useRouter } from "next/navigation";
 import { supabase, type Business } from "../../lib/supabase";
 
 const CATEGORIES = [
@@ -48,6 +50,7 @@ function fmt(dateStr?: string) {
 }
 
 export default function AdminPage() {
+  const router = useRouter();
   const [businesses, setBusinesses] = useState<Business[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -56,6 +59,11 @@ export default function AdminPage() {
   const [categoryFilter, setCategoryFilter] = useState("");
   const [sortField, setSortField] = useState<SortField>("created_at");
   const [sortDir, setSortDir] = useState<SortDir>("desc");
+
+  async function handleLogout() {
+    await fetch("/api/auth/logout", { method: "POST" });
+    router.push("/admin/login");
+  }
 
   async function fetchBusinesses() {
     setLoading(true);
@@ -170,14 +178,23 @@ export default function AdminPage() {
             </h1>
           </div>
 
-          <button
-            onClick={fetchBusinesses}
-            disabled={loading}
-            className="flex items-center gap-2 px-4 py-2 rounded-xl bg-white/[0.06] border border-white/10 text-slate-300 hover:text-white hover:border-white/20 text-sm font-medium transition-all duration-200 hover:scale-[1.03] active:scale-95 disabled:opacity-50"
-          >
-            <RefreshCw className={`w-4 h-4 ${loading ? "animate-spin" : ""}`} />
-            Atualizar
-          </button>
+          <div className="flex items-center gap-2">
+            <button
+              onClick={fetchBusinesses}
+              disabled={loading}
+              className="flex items-center gap-2 px-4 py-2 rounded-xl bg-white/[0.06] border border-white/10 text-slate-300 hover:text-white hover:border-white/20 text-sm font-medium transition-all duration-200 hover:scale-[1.03] active:scale-95 disabled:opacity-50"
+            >
+              <RefreshCw className={`w-4 h-4 ${loading ? "animate-spin" : ""}`} />
+              Atualizar
+            </button>
+            <button
+              onClick={handleLogout}
+              className="flex items-center gap-2 px-4 py-2 rounded-xl bg-rose-500/10 border border-rose-500/20 text-rose-300 hover:text-rose-200 hover:border-rose-500/40 text-sm font-medium transition-all duration-200 hover:scale-[1.03] active:scale-95"
+            >
+              <LogOut className="w-4 h-4" />
+              Sair
+            </button>
+          </div>
         </div>
 
         {/* Stat card */}

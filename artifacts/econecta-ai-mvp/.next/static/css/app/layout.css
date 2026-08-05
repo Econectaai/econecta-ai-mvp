@@ -599,6 +599,9 @@ video {
 .mt-1{
   margin-top: 0.25rem;
 }
+.mb-5{
+  margin-bottom: 1.25rem;
+}
 .inline-block{
   display: inline-block;
 }
@@ -650,6 +653,9 @@ video {
 .h-6{
   height: 1.5rem;
 }
+.h-3\.5{
+  height: 0.875rem;
+}
 .min-h-screen{
   min-height: 100vh;
 }
@@ -688,6 +694,9 @@ video {
 }
 .w-6{
   width: 1.5rem;
+}
+.w-3\.5{
+  width: 0.875rem;
 }
 .min-w-\[180px\]{
   min-width: 180px;
@@ -814,6 +823,11 @@ video {
   margin-top: calc(1rem * calc(1 - var(--tw-space-y-reverse)));
   margin-bottom: calc(1rem * var(--tw-space-y-reverse));
 }
+.space-y-1\.5 > :not([hidden]) ~ :not([hidden]){
+  --tw-space-y-reverse: 0;
+  margin-top: calc(0.375rem * calc(1 - var(--tw-space-y-reverse)));
+  margin-bottom: calc(0.375rem * var(--tw-space-y-reverse));
+}
 .overflow-hidden{
   overflow: hidden;
 }
@@ -929,6 +943,9 @@ video {
 .bg-white\/\[0\.04\]{
   background-color: rgb(255 255 255 / 0.04);
 }
+.bg-white\/\[0\.05\]{
+  background-color: rgb(255 255 255 / 0.05);
+}
 .bg-gradient-to-br{
   background-image: linear-gradient(to bottom right, var(--tw-gradient-stops));
 }
@@ -1005,6 +1022,9 @@ video {
 .p-5{
   padding: 1.25rem;
 }
+.p-6{
+  padding: 1.5rem;
+}
 .px-3{
   padding-left: 0.75rem;
   padding-right: 0.75rem;
@@ -1069,6 +1089,10 @@ video {
   padding-top: 2.5rem;
   padding-bottom: 2.5rem;
 }
+.py-1\.5{
+  padding-top: 0.375rem;
+  padding-bottom: 0.375rem;
+}
 .pl-4{
   padding-left: 1rem;
 }
@@ -1120,6 +1144,10 @@ video {
 .text-3xl{
   font-size: 1.875rem;
   line-height: 2.25rem;
+}
+.text-4xl{
+  font-size: 2.25rem;
+  line-height: 2.5rem;
 }
 .font-black{
   font-weight: 900;
@@ -1208,6 +1236,9 @@ video {
 .text-slate-700{
   --tw-text-opacity: 1;
   color: rgb(51 65 85 / var(--tw-text-opacity, 1));
+}
+.text-blue-200\/70{
+  color: rgb(191 219 254 / 0.7);
 }
 .underline{
   text-decoration-line: underline;
@@ -1361,6 +1392,10 @@ body {
   border-color: rgb(255 255 255 / 0.2);
 }
 
+.hover\:border-rose-500\/40:hover{
+  border-color: rgb(244 63 94 / 0.4);
+}
+
 .hover\:bg-white\/10:hover{
   background-color: rgb(255 255 255 / 0.1);
 }
@@ -1387,6 +1422,11 @@ body {
 .hover\:text-blue-300:hover{
   --tw-text-opacity: 1;
   color: rgb(147 197 253 / var(--tw-text-opacity, 1));
+}
+
+.hover\:text-rose-200:hover{
+  --tw-text-opacity: 1;
+  color: rgb(254 205 211 / var(--tw-text-opacity, 1));
 }
 
 .hover\:shadow-lg:hover{

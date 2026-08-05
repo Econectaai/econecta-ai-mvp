@@ -26,11 +26,7 @@ import {
   Bot,
 } from "lucide-react";
 import { supabase, type Business } from "../lib/supabase";
-import {
-  searchBusinesses,
-  isPromoActive,
-  type SearchResult,
-} from "../lib/search";
+import { isPromoActive, type SearchResult } from "../lib/search";
 
 /* ────────────────────────────────────────────────────────── */
 /*  Static data                                               */
@@ -108,14 +104,15 @@ const EMPTY_FORM: FormData = {
 };
 
 /* ────────────────────────────────────────────────────────── */
-/*  Valen response copy                                       */
+/*  Valen v2 API response type                                */
 /* ────────────────────────────────────────────────────────── */
 
-function valenMessage(count: number, query: string): string {
-  if (count === 0) return `Não encontrei resultados para "${query}". Tente outros termos.`;
-  if (count === 1) return `Encontrei 1 opção para você.`;
-  return `Encontrei ${count} opções para você.`;
-}
+type ValenApiResponse = {
+  message: string;
+  results: SearchResult[];
+  source: "openai" | "fallback";
+  error?: string;
+};
 
 /* ────────────────────────────────────────────────────────── */
 /*  Page component                                            */
@@ -129,6 +126,8 @@ export default function Home() {
   const [committedQuery, setCommittedQuery] = useState("");
   const [searching, setSearching] = useState(false);
   const [searchError, setSearchError] = useState<string | null>(null);
+  const [aiMessage, setAiMessage] = useState<string | null>(null);
+  const [aiSource, setAiSource] = useState<"openai" | "fallback" | null>(null);
 
   /* Registration modal state */
   const [modalOpen, setModalOpen] = useState(false);
@@ -144,6 +143,8 @@ export default function Home() {
     const t = term.trim();
     setCommittedQuery(t);
     setSearchError(null);
+    setAiMessage(null);
+    setAiSource(null);
 
     if (!t) {
       setResults(null);
@@ -151,10 +152,34 @@ export default function Home() {
     }
 
     setSearching(true);
-    const { data, error } = await searchBusinesses(t);
-    setSearching(false);
-    setResults(data);
-    if (error) setSearchError(error);
+
+    try {
+      const res = await fetch("/valen", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ query: t }),
+        signal: AbortSignal.timeout(20_000),
+      });
+
+      const json: ValenApiResponse = await res.json();
+
+      if (!res.ok || json.error) {
+        setSearchError(json.error ?? "Erro ao buscar resultados.");
+        setResults([]);
+      } else {
+        setResults(json.results);
+        setAiMessage(json.message);
+        setAiSource(json.source);
+      }
+    } catch (err) {
+      const msg = err instanceof Error && err.name === "TimeoutError"
+        ? "A busca demorou demais. Tente novamente."
+        : "Erro de conexão. Verifique sua internet e tente novamente.";
+      setSearchError(msg);
+      setResults([]);
+    } finally {
+      setSearching(false);
+    }
 
     // Scroll to results on mobile
     setTimeout(() => {
@@ -186,6 +211,8 @@ export default function Home() {
     setResults(null);
     setCommittedQuery("");
     setSearchError(null);
+    setAiMessage(null);
+    setAiSource(null);
   }
 
   /* ── Registration modal ── */
@@ -387,23 +414,31 @@ export default function Home() {
             {/* Valen response bar */}
             <div className="flex items-center justify-between mb-6 gap-4">
               <div className="flex items-center gap-3">
-                <div className="w-8 h-8 rounded-xl bg-gradient-to-br from-blue-500 to-violet-600 flex items-center justify-center shrink-0">
+                <div className="w-8 h-8 rounded-xl bg-gradient-to-br from-blue-500 to-violet-600 flex items-center justify-center shrink-0 shadow-lg shadow-blue-500/20">
                   <Bot className="w-4 h-4 text-white" />
                 </div>
-                <div>
-                  <p className="text-[10px] font-semibold text-blue-400/70 uppercase tracking-widest mb-0.5">
-                    Valen
-                  </p>
-                  <p className="text-white font-medium text-sm">
+                <div className="min-w-0">
+                  <div className="flex items-center gap-2 mb-0.5">
+                    <p className="text-[10px] font-semibold text-blue-400/70 uppercase tracking-widest">
+                      Valen
+                    </p>
+                    {aiSource === "openai" && !searching && (
+                      <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-md bg-violet-500/15 border border-violet-500/25 text-violet-400 text-[9px] font-semibold uppercase tracking-wide">
+                        <Sparkles className="w-2.5 h-2.5" />
+                        IA
+                      </span>
+                    )}
+                  </div>
+                  <p className="text-white font-medium text-sm leading-snug">
                     {searching
-                      ? "Buscando opções para você…"
-                      : valenMessage(results.length, committedQuery)}
+                      ? "Consultando opções para você…"
+                      : (aiMessage ?? "Resultado da busca.")}
                   </p>
                 </div>
               </div>
               <button
                 onClick={clearSearch}
-                className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-white/[0.06] border border-white/10 text-slate-400 hover:text-white hover:border-white/20 text-xs font-medium transition-all duration-200 whitespace-nowrap"
+                className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-white/[0.06] border border-white/10 text-slate-400 hover:text-white hover:border-white/20 text-xs font-medium transition-all duration-200 whitespace-nowrap shrink-0"
               >
                 <X className="w-3.5 h-3.5" />
                 Limpar

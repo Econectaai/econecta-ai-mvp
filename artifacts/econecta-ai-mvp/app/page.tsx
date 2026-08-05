@@ -12,7 +12,12 @@ import {
   Sparkles,
   TrendingDown,
   Zap,
+  X,
+  CheckCircle2,
+  Loader2,
+  Building2,
 } from "lucide-react";
+import { supabase, type Business } from "../lib/supabase";
 
 const categories = [
   {
@@ -58,9 +63,70 @@ const stats = [
   { icon: Zap, value: "em tempo real", label: "promoções" },
 ];
 
+const BRAZIL_STATES = [
+  "AC","AL","AP","AM","BA","CE","DF","ES","GO","MA",
+  "MT","MS","MG","PA","PB","PR","PE","PI","RJ","RN",
+  "RS","RO","RR","SC","SP","SE","TO",
+];
+
+const EMPTY_FORM: Omit<Business, "id" | "created_at"> = {
+  business_name: "",
+  owner_name: "",
+  email: "",
+  phone: "",
+  city: "",
+  state: "",
+  category: "",
+};
+
 export default function Home() {
   const [query, setQuery] = useState("");
   const [activeCategory, setActiveCategory] = useState<string | null>(null);
+
+  // Modal state
+  const [modalOpen, setModalOpen] = useState(false);
+  const [form, setForm] = useState({ ...EMPTY_FORM });
+  const [loading, setLoading] = useState(false);
+  const [success, setSuccess] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  function openModal() {
+    setForm({ ...EMPTY_FORM, category: activeCategory ?? "" });
+    setSuccess(false);
+    setError(null);
+    setModalOpen(true);
+  }
+
+  function closeModal() {
+    if (loading) return;
+    setModalOpen(false);
+    setSuccess(false);
+    setError(null);
+  }
+
+  function handleChange(
+    e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>
+  ) {
+    setForm((prev) => ({ ...prev, [e.target.name]: e.target.value }));
+  }
+
+  async function handleSubmit(e: React.FormEvent) {
+    e.preventDefault();
+    setLoading(true);
+    setError(null);
+
+    const { error: sbError } = await supabase
+      .from("businesses")
+      .insert([form]);
+
+    setLoading(false);
+
+    if (sbError) {
+      setError(sbError.message);
+    } else {
+      setSuccess(true);
+    }
+  }
 
   return (
     <main className="min-h-screen bg-[#0a0f1e] relative overflow-hidden">
@@ -208,7 +274,232 @@ export default function Home() {
             );
           })}
         </div>
+
+        {/* CTA — register business */}
+        <div
+          className="mt-10 animate-fade-in"
+          style={{ animationDelay: "650ms" }}
+        >
+          <button
+            onClick={openModal}
+            className="inline-flex items-center gap-2 px-6 py-3 rounded-xl glass border border-white/10 text-slate-300 hover:text-white hover:border-white/20 text-sm font-medium transition-all duration-200 hover:scale-[1.03] active:scale-95"
+          >
+            <Building2 className="w-4 h-4 text-blue-400" />
+            Cadastre seu negócio gratuitamente
+          </button>
+        </div>
       </div>
+
+      {/* ── Modal ── */}
+      {modalOpen && (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center p-4"
+          style={{ background: "rgba(0,0,0,0.7)", backdropFilter: "blur(6px)" }}
+          onClick={(e) => e.target === e.currentTarget && closeModal()}
+        >
+          <div className="w-full max-w-lg glass rounded-2xl border border-white/10 shadow-2xl overflow-hidden">
+            {/* Modal header */}
+            <div className="flex items-center justify-between px-6 py-5 border-b border-white/10">
+              <div className="flex items-center gap-2.5">
+                <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-blue-500 to-violet-600 flex items-center justify-center">
+                  <Building2 className="w-4 h-4 text-white" />
+                </div>
+                <div>
+                  <h2 className="text-white font-semibold text-base leading-tight">
+                    Cadastre seu negócio
+                  </h2>
+                  <p className="text-slate-500 text-xs">
+                    Apareça nas buscas do Econecta AI
+                  </p>
+                </div>
+              </div>
+              <button
+                onClick={closeModal}
+                className="text-slate-500 hover:text-white transition-colors p-1 rounded-lg hover:bg-white/10"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            {/* Success state */}
+            {success ? (
+              <div className="flex flex-col items-center gap-4 px-6 py-12 text-center">
+                <div className="w-16 h-16 rounded-full bg-emerald-500/15 border border-emerald-500/30 flex items-center justify-center">
+                  <CheckCircle2 className="w-8 h-8 text-emerald-400" />
+                </div>
+                <div>
+                  <h3 className="text-white font-semibold text-lg mb-1">
+                    Cadastro realizado!
+                  </h3>
+                  <p className="text-slate-400 text-sm">
+                    Seu negócio foi registrado com sucesso. Em breve ele
+                    aparecerá nas buscas do Econecta AI.
+                  </p>
+                </div>
+                <button
+                  onClick={closeModal}
+                  className="mt-2 px-6 py-2.5 rounded-xl bg-gradient-to-r from-blue-500 to-violet-600 hover:from-blue-400 hover:to-violet-500 text-white font-semibold text-sm transition-all duration-200 hover:scale-[1.03] active:scale-95"
+                >
+                  Fechar
+                </button>
+              </div>
+            ) : (
+              /* Form */
+              <form onSubmit={handleSubmit} className="px-6 py-5 space-y-4">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  <Field
+                    label="Nome do negócio"
+                    name="business_name"
+                    value={form.business_name}
+                    onChange={handleChange}
+                    placeholder="Ex: Padaria Central"
+                    required
+                  />
+                  <Field
+                    label="Nome do responsável"
+                    name="owner_name"
+                    value={form.owner_name}
+                    onChange={handleChange}
+                    placeholder="Seu nome completo"
+                    required
+                  />
+                  <Field
+                    label="E-mail"
+                    name="email"
+                    type="email"
+                    value={form.email}
+                    onChange={handleChange}
+                    placeholder="contato@negocio.com"
+                    required
+                  />
+                  <Field
+                    label="Telefone"
+                    name="phone"
+                    type="tel"
+                    value={form.phone}
+                    onChange={handleChange}
+                    placeholder="(11) 99999-9999"
+                    required
+                  />
+                  <Field
+                    label="Cidade"
+                    name="city"
+                    value={form.city}
+                    onChange={handleChange}
+                    placeholder="Sua cidade"
+                    required
+                  />
+
+                  {/* State select */}
+                  <div className="flex flex-col gap-1.5">
+                    <label className="text-xs font-medium text-slate-400 uppercase tracking-wide">
+                      Estado <span className="text-rose-400">*</span>
+                    </label>
+                    <select
+                      name="state"
+                      value={form.state}
+                      onChange={handleChange}
+                      required
+                      className="bg-white/[0.06] border border-white/10 rounded-xl px-3 py-2.5 text-sm text-white outline-none focus:border-blue-500/60 transition-colors appearance-none"
+                    >
+                      <option value="" disabled className="bg-[#0a0f1e]">
+                        Selecione
+                      </option>
+                      {BRAZIL_STATES.map((s) => (
+                        <option key={s} value={s} className="bg-[#0a0f1e]">
+                          {s}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+                </div>
+
+                {/* Category select */}
+                <div className="flex flex-col gap-1.5">
+                  <label className="text-xs font-medium text-slate-400 uppercase tracking-wide">
+                    Categoria <span className="text-rose-400">*</span>
+                  </label>
+                  <select
+                    name="category"
+                    value={form.category}
+                    onChange={handleChange}
+                    required
+                    className="bg-white/[0.06] border border-white/10 rounded-xl px-3 py-2.5 text-sm text-white outline-none focus:border-blue-500/60 transition-colors appearance-none"
+                  >
+                    <option value="" disabled className="bg-[#0a0f1e]">
+                      Selecione uma categoria
+                    </option>
+                    {categories.map((c) => (
+                      <option key={c.label} value={c.label} className="bg-[#0a0f1e]">
+                        {c.label}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+
+                {/* Error */}
+                {error && (
+                  <p className="text-rose-400 text-xs bg-rose-500/10 border border-rose-500/20 rounded-xl px-3 py-2">
+                    Erro ao salvar: {error}
+                  </p>
+                )}
+
+                {/* Submit */}
+                <button
+                  type="submit"
+                  disabled={loading}
+                  className="w-full flex items-center justify-center gap-2 py-3 rounded-xl bg-gradient-to-r from-blue-500 to-violet-600 hover:from-blue-400 hover:to-violet-500 disabled:opacity-60 disabled:cursor-not-allowed text-white font-semibold text-sm transition-all duration-200 hover:scale-[1.01] active:scale-95 shadow-lg shadow-blue-500/20"
+                >
+                  {loading ? (
+                    <>
+                      <Loader2 className="w-4 h-4 animate-spin" />
+                      Salvando...
+                    </>
+                  ) : (
+                    "Cadastrar negócio"
+                  )}
+                </button>
+              </form>
+            )}
+          </div>
+        </div>
+      )}
     </main>
+  );
+}
+
+/* ── Reusable input field ── */
+function Field({
+  label,
+  name,
+  value,
+  onChange,
+  placeholder,
+  type = "text",
+  required,
+}: {
+  label: string;
+  name: string;
+  value: string;
+  onChange: (e: React.ChangeEvent<HTMLInputElement>) => void;
+  placeholder?: string;
+  type?: string;
+  required?: boolean;
+}) {
+  return (
+    <div className="flex flex-col gap-1.5">
+      <label className="text-xs font-medium text-slate-400 uppercase tracking-wide">
+        {label} {required && <span className="text-rose-400">*</span>}
+      </label>
+      <input
+        type={type}
+        name={name}
+        value={value}
+        onChange={onChange}
+        placeholder={placeholder}
+        required={required}
+        className="bg-white/[0.06] border border-white/10 rounded-xl px-3 py-2.5 text-sm text-white placeholder-slate-600 outline-none focus:border-blue-500/60 transition-colors"
+      />
+    </div>
   );
 }

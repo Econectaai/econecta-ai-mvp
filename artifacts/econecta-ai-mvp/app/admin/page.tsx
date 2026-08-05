@@ -18,7 +18,6 @@ import {
   Sparkles,
   LogOut,
 } from "lucide-react";
-import { useRouter } from "next/navigation";
 import { supabase, type Business } from "../../lib/supabase";
 
 const CATEGORIES = [
@@ -50,7 +49,6 @@ function fmt(dateStr?: string) {
 }
 
 export default function AdminPage() {
-  const router = useRouter();
   const [businesses, setBusinesses] = useState<Business[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -62,7 +60,8 @@ export default function AdminPage() {
 
   async function handleLogout() {
     await fetch("/admin/auth/logout", { method: "POST" });
-    router.push("/admin/login");
+    // Hard redirect so the session cookie is cleared before the next request
+    window.location.replace("/admin/login");
   }
 
   async function fetchBusinesses() {

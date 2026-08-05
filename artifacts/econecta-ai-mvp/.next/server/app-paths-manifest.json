@@ -1,4 +1,6 @@
 {
   "/admin/auth/login/route": "app/admin/auth/login/route.js",
-  "/page": "app/page.js"
+  "/admin/auth/logout/route": "app/admin/auth/logout/route.js",
+  "/page": "app/page.js",
+  "/admin/page": "app/admin/page.js"
 }

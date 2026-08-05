@@ -1,11 +1,9 @@
 "use client";
 
 import { useState, FormEvent } from "react";
-import { useRouter } from "next/navigation";
 import { Sparkles, Mail, Lock, Loader2, AlertCircle } from "lucide-react";
 
 export default function AdminLoginPage() {
-  const router = useRouter();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
@@ -23,8 +21,8 @@ export default function AdminLoginPage() {
     });
 
     if (res.ok) {
-      router.push("/admin");
-      router.refresh();
+      // Hard redirect so middleware re-evaluates the session cookie on a real request
+      window.location.replace("/admin");
       return;
     }
 

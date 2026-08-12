@@ -1,0 +1,66 @@
+Build Valen v1, the intelligent search assistant for EconectaAI.
+
+Goal:
+Transform the landing page search into a conversational business and promotion search powered by Supabase data.
+
+Requirements:
+
+- Keep the current visual identity.
+- Keep the existing business registration form.
+- Use the existing Supabase environment variables.
+- Search only real records from public.businesses.
+- Do not use mock data.
+- Do not add a paid AI API yet.
+
+Search behavior:
+- The user can type phrases such as:
+  "pizza em Santo André"
+  "farmácia em São Paulo"
+  "promoção de padaria"
+  "restaurante com desconto"
+- Search across:
+  business_name
+  category
+  city
+  neighborhood
+  description
+  promotion_title
+  promotion_description
+- Ignore accents and uppercase/lowercase differences when possible.
+- Prefer businesses with an active promotion.
+- A promotion is active when promotion_expiration is null or is today/future.
+- Sort active promotions first, then highest discount_percentage, then newest records.
+
+User interface:
+- Replace the current decorative search behavior with a working search.
+- Show a loading state.
+- Show a friendly Valen response above the results.
+- Example:
+  "Encontrei 3 opções para você."
+- Show result cards with:
+  business_name
+  category
+  city and neighborhood
+  description
+  promotion_title
+  promotion_description
+  discount_percentage
+  promotion_expiration
+  WhatsApp button when available
+  Instagram and website links when available
+- Show a clear empty state when no results are found.
+- Add a button to clear the search.
+- Category buttons must also run a real search.
+
+Safety and data:
+- Do not expose admin credentials.
+- Do not show owner_name, email, or private administrative data in public search.
+- Do not modify /admin authentication.
+- Do not change existing database records.
+
+Technical:
+- Create a reusable Supabase search function.
+- Add clear error handling.
+- Make the public search responsive on desktop and mobile.
+- Test with the existing "Padaria Teste Econecta" record.
+- After implementation, explain exactly how to test Valen in Preview.

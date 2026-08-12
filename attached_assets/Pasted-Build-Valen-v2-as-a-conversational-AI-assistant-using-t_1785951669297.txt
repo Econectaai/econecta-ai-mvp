@@ -1,0 +1,64 @@
+Build Valen v2 as a conversational AI assistant using the official OpenAI JavaScript SDK and the Responses API.
+
+Environment variables:
+- OPENAI_API_KEY
+- OPENAI_MODEL
+- Existing Supabase variables
+
+Core architecture:
+1. The user sends a natural-language request.
+2. Search public.businesses in Supabase first using the existing search function.
+3. Send only the matching public business information to OpenAI.
+4. OpenAI generates a short, helpful Portuguese response grounded only in those records.
+5. Return the response and the real business cards.
+
+Security:
+- Use OPENAI_API_KEY only in a server-side route.
+- Never expose the key in client-side code.
+- Never send owner_name, email, admin credentials, or private fields to OpenAI.
+- Do not modify /admin authentication.
+- Do not use the Supabase service-role key.
+- Do not log secrets.
+
+Accuracy:
+- Valen must never invent businesses, prices, discounts, addresses, opening hours, or promotions.
+- If there are no matching records, clearly say that no registered option was found.
+- If information is missing, say that it was not provided.
+- Expired promotions must not be presented as active.
+- Existing Supabase data remains the source of truth.
+
+Conversation behavior:
+- Respond in Brazilian Portuguese.
+- Introduce itself as Valen, assistente da EconectaAI.
+- Understand requests such as:
+  "Quero uma padaria em Santo André"
+  "Tem restaurante com desconto?"
+  "Onde encontro croissant?"
+  "Quero uma promoção perto de São Paulo"
+- Keep responses concise and useful.
+- Mention at most 5 businesses per response.
+- Prefer active promotions, then higher discounts, then newer records.
+- Preserve the existing result cards and WhatsApp/Instagram/website buttons.
+
+Technical:
+- Create a server route dedicated to Valen.
+- Use the official OpenAI SDK and Responses API.
+- Use process.env.OPENAI_MODEL rather than hard-coding a model.
+- Add input validation and a reasonable message-length limit.
+- Add basic rate limiting per IP or session.
+- Add loading, error, timeout, and fallback states.
+- If OpenAI is unavailable, fall back to the existing Valen v1 Supabase search.
+- Keep the current design responsive.
+- Do not change the registration form or admin panel.
+
+Cost control:
+- Send only the necessary matching business fields.
+- Limit Supabase context to 10 records.
+- Request a concise response.
+- Do not maintain unlimited conversation history.
+- Do not call OpenAI when the search input is empty.
+
+After implementation:
+- Verify that no API key appears in browser code or responses.
+- Test successful results, no results, expired promotions, API failure fallback, and mobile layout.
+- Explain exactly how I should test Valen v2 in Preview.
